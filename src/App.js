@@ -2,28 +2,36 @@ import React, {Component} from 'react';
 import logo from './logo.svg';
 import xlsx from 'xlsx';
 import './App.css';
+import testSheet from './testFile.js';
+
+const isDevelopmentMode = window.location.search.includes('dev');
 
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {rows: []};
   }
+  componentDidMount() {
+    if (isDevelopmentMode) this.loadSheet(testSheet);
+  }
+  loadSheet(data) {
+    const parsed = xlsx.read(data).Sheets.Sheet1;
+    const rows = [];
+    for (let row = 0; row < 26; row++) {
+      rows[row] = [];
+      for (let col = 0; col < 26; col++) {
+        const key = String.fromCharCode(col + 65) + (row + 1);
+        if (parsed[key]) rows[row][col] = parsed[key];
+      }
+    }
+    this.setState({rows});
+    console.log(parsed);
+  }
   changeFile(file) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = e => {
-      const data = btoa(e.target.result);
-      const parsed = xlsx.read(data).Sheets.Sheet1;
-      const rows = [];
-      for (let row = 0; row < 26; row++) {
-        rows[row] = [];
-        for (let col = 0; col < 26; col++) {
-          const key = String.fromCharCode(col + 65) + (row + 1);
-          if (parsed[key]) rows[row][col] = parsed[key];
-        }
-      }
-      this.setState({rows});
-      console.log(parsed);
+      this.loadSheet(btoa(e.target.result));
     };
     reader.readAsBinaryString(file);
   }
