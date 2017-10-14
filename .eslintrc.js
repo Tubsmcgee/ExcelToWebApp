@@ -21,9 +21,6 @@ module.exports = {
     'plugin:import/warnings'
   ],
   plugins: ['react', 'prettier'],
-  settings: {
-    'import/resolver': 'webpack'
-  },
   rules: {
     'prefer-const': 'warn',
     'prefer-arrow-callback': 'warn',
