@@ -6,14 +6,13 @@ import testSheet from './testFile.js';
 
 const isDevelopmentMode = window.location.search.includes('dev');
 
-const makeFunction = str => {
-  const vars = str.match(/\w+/g).reduce((res, v) => {
+const unique = arr =>
+  arr.reduce((res, v) => {
     if (!res.includes(v)) res.push(v);
     return res;
   }, []);
-  const func = new Function(...vars, `return ${str};`); // this is slightly dangerous
-  return {vars, func};
-};
+
+// const flatten = arr => arr.reduce((res, v) => res.concat(v), []);
 
 class App extends Component {
   constructor(props) {
@@ -25,19 +24,31 @@ class App extends Component {
   }
   loadSheet(data) {
     const parsed = xlsx.read(data).Sheets.Sheet1;
+    const cells = Object.keys(parsed)
+      .filter(key => key[0] !== '!')
+      .map(key => parsed[key]);
+
+    cells.forEach(cell => {
+      if (cell.f) {
+        cell.vars = unique(cell.f.match(/[A-Z]\w*/g));
+        cell.func = new Function(...cell.vars, `return ${cell.f};`); // this is slightly dangerous
+        cell.vars.forEach(v => {
+          if (!parsed[v]) parsed[v] = {};
+          parsed[v].isInput = true;
+        });
+      }
+    });
+
     const rows = [];
     for (let row = 0; row < 26; row++) {
       rows[row] = [];
       for (let col = 0; col < 26; col++) {
         const key = String.fromCharCode(col + 65) + (row + 1);
-        if (parsed[key]) {
-          rows[row][col] = parsed[key];
-          if (parsed[key].f) {
-            Object.assign(parsed[key], makeFunction(parsed[key].f)); // sets vars and func
-          }
-        }
+        if (parsed[key]) rows[row][col] = parsed[key];
       }
     }
+
+    console.log(parsed);
     this.setState({rows});
   }
   changeFile(file) {
