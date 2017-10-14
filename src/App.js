@@ -26,7 +26,10 @@ class App extends Component {
     const parsed = xlsx.read(data).Sheets.Sheet1;
     const cells = Object.keys(parsed)
       .filter(key => key[0] !== '!')
-      .map(key => parsed[key]);
+      .map(key => {
+        parsed[key].id = key;
+        return parsed[key];
+      });
 
     cells.forEach(cell => {
       if (cell.f) {
@@ -49,7 +52,7 @@ class App extends Component {
     }
 
     console.log(parsed);
-    this.setState({rows});
+    this.setState({rows, parsed});
   }
   changeFile(file) {
     if (!file) return;
@@ -59,10 +62,29 @@ class App extends Component {
     };
     reader.readAsBinaryString(file);
   }
-  calcalate() {
-    // const {rows} = this.state;
+  changeCell(id, val) {
+    console.log(this.state.parsed);
+    this.setState({parsed: {...this.state.parsed, [id]: {...this.state.parsed[id], v: val}}});
   }
+
   render() {
+    const rows = this.state.rows.map((row, i) => (
+      <tr key={i}>
+        {row.map((col, j) => (
+          <td key={j} title={JSON.stringify(col)}>
+            {col ? (
+              col.isInput ? (
+                <input type="number" value={col.v} onChange={e => this.changeCell(col.id, e.target.value)} />
+              ) : (
+                col.v
+              )
+            ) : (
+              ''
+            )}
+          </td>
+        ))}
+      </tr>
+    ));
     return (
       <div className="App">
         <header className="App-header">
@@ -71,17 +93,7 @@ class App extends Component {
           <input type="file" onChange={e => this.changeFile(e.target.files[0])} />
         </header>
         <table>
-          <tbody>
-            {this.state.rows.map((row, i) => (
-              <tr key={i}>
-                {row.map((col, j) => (
-                  <td key={j} title={JSON.stringify(col)}>
-                    {col ? col.v : ''}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
+          <tbody>{rows}</tbody>
         </table>
       </div>
     );
