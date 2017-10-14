@@ -6,6 +6,15 @@ import testSheet from './testFile.js';
 
 const isDevelopmentMode = window.location.search.includes('dev');
 
+const makeFunction = str => {
+  const vars = str.match(/\w+/g).reduce((res, v) => {
+    if (!res.includes(v)) res.push(v);
+    return res;
+  }, []);
+  const func = new Function(...vars, `return ${str};`); // this is slightly dangerous
+  return {vars, func};
+};
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -21,11 +30,15 @@ class App extends Component {
       rows[row] = [];
       for (let col = 0; col < 26; col++) {
         const key = String.fromCharCode(col + 65) + (row + 1);
-        if (parsed[key]) rows[row][col] = parsed[key];
+        if (parsed[key]) {
+          rows[row][col] = parsed[key];
+          if (parsed[key].f) {
+            Object.assign(parsed[key], makeFunction(parsed[key].f)); // sets vars and func
+          }
+        }
       }
     }
     this.setState({rows});
-    console.log(parsed);
   }
   changeFile(file) {
     if (!file) return;
@@ -34,6 +47,9 @@ class App extends Component {
       this.loadSheet(btoa(e.target.result));
     };
     reader.readAsBinaryString(file);
+  }
+  calcalate() {
+    // const {rows} = this.state;
   }
   render() {
     return (
