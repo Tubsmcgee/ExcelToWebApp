@@ -14,6 +14,9 @@ const unique = arr =>
 
 // const flatten = arr => arr.reduce((res, v) => res.concat(v), []);
 
+const colToNum = letters =>
+  letters.length ? letters.charCodeAt(letters.length - 1) - 64 + 26 * colToNum(letters.slice(0, -1)) : 0;
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -24,14 +27,17 @@ class App extends Component {
   }
   loadSheet(data) {
     const parsed = xlsx.read(data).Sheets.Sheet1;
-    const cells = Object.keys(parsed)
-      .filter(key => key[0] !== '!')
-      .map(key => {
-        parsed[key].id = key;
-        return parsed[key];
-      });
+    const keys = Object.keys(parsed).filter(key => key[0] !== '!');
 
-    cells.forEach(cell => {
+    keys.forEach(key => {
+      parsed[key].id = key;
+    });
+
+    const rows = [];
+    const cols = [];
+
+    keys.forEach(key => {
+      const cell = parsed[key];
       if (cell.f) {
         cell.vars = unique(cell.f.match(/[A-Z]\w*/g));
         cell.func = new Function(...cell.vars, `return ${cell.f};`); // this is slightly dangerous
@@ -40,19 +46,18 @@ class App extends Component {
           parsed[v].isInput = true;
         });
       }
+
+      const row = parseInt(cell.id.replace(/^[A-Z]+/g, ''), 10);
+      const col = cell.id.replace(/\d/g, '');
+      if (!rows.includes(row)) rows.push(row);
+      if (!cols.includes(col)) cols.push(col);
     });
 
-    const rows = [];
-    for (let row = 0; row < 26; row++) {
-      rows[row] = [];
-      for (let col = 0; col < 26; col++) {
-        const key = String.fromCharCode(col + 65) + (row + 1);
-        if (parsed[key]) rows[row][col] = parsed[key];
-      }
-    }
+    rows.sort();
+    cols.sort();
 
-    console.log(parsed);
-    this.setState({rows, parsed});
+    console.log(parsed, rows, cols);
+    this.setState({parsed, rows, cols});
   }
   changeFile(file) {
     if (!file) return;
@@ -68,23 +73,26 @@ class App extends Component {
   }
 
   render() {
-    const rows = this.state.rows.map((row, i) => (
-      <tr key={i}>
-        {row.map((col, j) => (
-          <td key={j} title={JSON.stringify(col)}>
-            {col ? (
-              col.isInput ? (
-                <input type="number" value={col.v} onChange={e => this.changeCell(col.id, e.target.value)} />
-              ) : (
-                col.v
-              )
-            ) : (
-              ''
-            )}
+    const {parsed, rows, cols} = this.state;
+
+    const tableRows = rows.map(rowNumber => {
+      const rowColumns = cols.map(colLetter => {
+        const cell = parsed[colLetter + rowNumber];
+        let val = '';
+        if (cell && cell.isInput) {
+          val = <input type="number" value={cell.v} onChange={e => this.changeCell(cell.id, e.target.value)} />;
+        } else if (cell) {
+          val = cell.v;
+        }
+        return (
+          <td key={colLetter + rowNumber} title={JSON.stringify(cell)}>
+            {val}
           </td>
-        ))}
-      </tr>
-    ));
+        );
+      });
+      return <tr key={rowNumber}>{rowColumns}</tr>;
+    });
+
     return (
       <div className="App">
         <header className="App-header">
@@ -93,7 +101,7 @@ class App extends Component {
           <input type="file" onChange={e => this.changeFile(e.target.files[0])} />
         </header>
         <table>
-          <tbody>{rows}</tbody>
+          <tbody>{tableRows}</tbody>
         </table>
       </div>
     );
