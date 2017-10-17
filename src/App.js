@@ -3,6 +3,7 @@ import logo from './logo.svg';
 import xlsx from 'xlsx';
 import './App.css';
 import testSheet from './testFile.js';
+import functions from './functions.js';
 
 const isDevelopmentMode = window.location.search.includes('dev');
 
@@ -68,7 +69,6 @@ class App extends Component {
     reader.readAsBinaryString(file);
   }
   changeCell(id, val) {
-    console.log(this.state.parsed);
     this.setState({parsed: {...this.state.parsed, [id]: {...this.state.parsed[id], v: val}}});
   }
 
