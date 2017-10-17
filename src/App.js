@@ -2,9 +2,6 @@ import React, {Component} from 'react';
 import logo from './logo.svg';
 import xlsx from 'xlsx';
 import './App.css';
-import testSheet from './testFile.js';
-
-const isDevelopmentMode = window.location.search.includes('dev');
 
 const unique = arr =>
   arr.reduce((res, v) => {
@@ -23,7 +20,7 @@ class App extends Component {
     this.state = {rows: []};
   }
   componentDidMount() {
-    if (isDevelopmentMode) this.loadSheet(testSheet);
+    if (localStorage.sheet) this.loadSheet(localStorage.sheet);
   }
   loadSheet(data) {
     const parsed = xlsx.read(data).Sheets.Sheet1;
@@ -63,7 +60,9 @@ class App extends Component {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = e => {
-      this.loadSheet(btoa(e.target.result));
+      const data = btoa(e.target.result);
+      localStorage.sheet = data;
+      this.loadSheet(data);
     };
     reader.readAsBinaryString(file);
   }
