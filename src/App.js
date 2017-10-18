@@ -3,17 +3,10 @@ import xlsx from 'xlsx';
 import './App.css';
 import functions from './functions.js';
 import 'bootstrap/dist/css/bootstrap.css';
-
-const unique = arr =>
-  arr.reduce((res, v) => {
-    if (!res.includes(v)) res.push(v);
-    return res;
-  }, []);
+import {rangeReplacer} from './rangeReplacer.js';
+import {getRowCol, unique} from './utils.js';
 
 // const flatten = arr => arr.reduce((res, v) => res.concat(v), []);
-
-const colToNum = letters =>
-  letters.length ? letters.charCodeAt(letters.length - 1) - 64 + 26 * colToNum(letters.slice(0, -1)) : 0;
 
 class App extends Component {
   constructor(props) {
@@ -31,27 +24,32 @@ class App extends Component {
       parsed[key].id = key;
     });
 
-    const rows = [];
-    const cols = [];
-
     keys.forEach(key => {
       const cell = parsed[key];
       if (cell.f) {
+        cell.f = cell.f.replace(/[A-Z]\w*:[A-Z]\w*/g, rangeReplacer);
         cell.vars = unique(cell.f.match(/[A-Z]\w*/g));
         cell.func = new Function(...cell.vars, `return ${cell.f};`); //eslint-disable-line
-        cell.vars.forEach(v => {
-          if (!parsed[v]) parsed[v] = {};
-          parsed[v].isInput = true;
+        console.log(cell.func);
+        cell.vars.forEach(id => {
+          if (!parsed[id]) keys[id] = parsed[id] = {id};
+          parsed[id].isInput = true;
         });
       }
+    });
 
-      const row = parseInt(cell.id.replace(/^[A-Z]+/g, ''), 10);
-      const col = cell.id.replace(/\d/g, '');
+    const rows = [];
+    const cols = [];
+    console.log(parsed);
+
+    keys.forEach(key => {
+      const cell = parsed[key];
+      const {row, col} = getRowCol(cell.id);
       if (!rows.includes(row)) rows.push(row);
       if (!cols.includes(col)) cols.push(col);
     });
 
-    rows.sort();
+    rows.sort((a, b) => a - b);
     cols.sort();
 
     this.setState({parsed, rows, cols});
