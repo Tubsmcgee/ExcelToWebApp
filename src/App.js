@@ -38,7 +38,7 @@ class App extends Component {
       const cell = parsed[key];
       if (cell.f) {
         cell.vars = unique(cell.f.match(/[A-Z]\w*/g));
-        cell.func = new Function(...cell.vars, `return ${cell.f};`); // this is slightly dangerous
+        cell.func = new Function(...cell.vars, `return ${cell.f};`); //eslint-disable-line
         cell.vars.forEach(v => {
           if (!parsed[v]) parsed[v] = {};
           parsed[v].isInput = true;
@@ -79,16 +79,11 @@ class App extends Component {
         const cell = parsed[colLetter + rowNumber];
         let val = '';
         if (cell && cell.func) {
-          const args = cell.vars.map(varName => {
-            if (functions[varName]) {
-              return functions[varName];
-            }
-            if (parsed[varName]) {
-              return +parsed[varName].v;
-            }
-            console.error('varName not found', cell);
-            return 0;
-          });
+          const args = cell.vars.map(
+            varName =>
+              functions[varName] ||
+              (parsed[varName] ? +parsed[varName].v : console.error(varName, 'in', cell, 'not found'))
+          );
           cell.v = cell.func(...args);
         }
         if (cell && cell.isInput) {
