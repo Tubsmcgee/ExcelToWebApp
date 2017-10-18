@@ -29,9 +29,6 @@ class App extends Component {
 
     keys.forEach(key => {
       parsed[key].id = key;
-      if (!isNaN(parsed[key].v)) {
-        parsed[key].v = +parsed[key].v;
-      }
     });
 
     const rows = [];
