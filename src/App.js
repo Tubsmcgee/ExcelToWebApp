@@ -6,12 +6,10 @@ import 'bootstrap/dist/css/bootstrap.css';
 import {rangeReplacer} from './rangeReplacer.js';
 import {getRowCol, unique} from './utils.js';
 
-// const flatten = arr => arr.reduce((res, v) => res.concat(v), []);
-
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = {rows: []};
+    this.state = {rows: []}; // TODO: set correct initial state
   }
   componentDidMount() {
     if (localStorage.sheet) this.loadSheet(localStorage.sheet);
@@ -52,6 +50,7 @@ class App extends Component {
     rows.sort((a, b) => a - b);
     cols.sort();
 
+    // TODO: store object without !keys, call it something better than "parsed"
     this.setState({parsed, rows, cols});
   }
   changeFile(file) {
@@ -65,7 +64,9 @@ class App extends Component {
     reader.readAsBinaryString(file);
   }
   changeCell(id, val) {
-    this.setState({parsed: {...this.state.parsed, [id]: {...this.state.parsed[id], v: val}}});
+    this.setState({
+      parsed: {...this.state.parsed, [id]: {...this.state.parsed[id], v: val}}
+    });
   }
 
   render() {
@@ -74,15 +75,21 @@ class App extends Component {
     const tableRows = rows.map(rowNumber => {
       const rowColumns = cols.map(colLetter => {
         const cell = parsed[colLetter + rowNumber];
-        let val = '';
+
+        // TODO: don't do this during render
         if (cell && cell.func) {
           const args = cell.vars.map(
             varName =>
               functions[varName] ||
-              (parsed[varName] ? +parsed[varName].v : console.error(varName, 'in', cell, 'not found'))
+              (parsed[varName]
+                ? +parsed[varName].v
+                : console.error(varName, 'in', cell, 'not found'))
           );
           cell.v = cell.func(...args);
         }
+
+        // TODO: make a getCellValue function
+        let val = '';
         if (cell && cell.isInput) {
           val = (
             <input
