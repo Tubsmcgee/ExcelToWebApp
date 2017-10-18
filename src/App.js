@@ -2,7 +2,7 @@ import React, {Component} from 'react';
 import logo from './logo.svg';
 import xlsx from 'xlsx';
 import './App.css';
-// import functions from './functions.js';
+import functions from './functions.js';
 
 const unique = arr =>
   arr.reduce((res, v) => {
@@ -29,6 +29,9 @@ class App extends Component {
 
     keys.forEach(key => {
       parsed[key].id = key;
+      if (!isNaN(parsed[key].v)) {
+        parsed[key].v = +parsed[key].v;
+      }
     });
 
     const rows = [];
@@ -78,6 +81,19 @@ class App extends Component {
       const rowColumns = cols.map(colLetter => {
         const cell = parsed[colLetter + rowNumber];
         let val = '';
+        if (cell && cell.func) {
+          const args = cell.vars.map(varName => {
+            if (functions[varName]) {
+              return functions[varName];
+            }
+            if (parsed[varName]) {
+              return +parsed[varName].v;
+            }
+            console.error('varName not found', cell);
+            return 0;
+          });
+          cell.v = cell.func(...args);
+        }
         if (cell && cell.isInput) {
           val = <input type="number" value={cell.v} onChange={e => this.changeCell(cell.id, e.target.value)} />;
         } else if (cell) {
