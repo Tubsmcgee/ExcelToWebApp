@@ -22,6 +22,7 @@ class App extends Component {
       parsed[key].id = key;
     });
 
+    //TODO: add a catch to prevent functions being designated as inputs
     keys.forEach(key => {
       const cell = parsed[key];
       if (cell.f) {
