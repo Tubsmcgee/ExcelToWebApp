@@ -1,8 +1,8 @@
 import React, {Component} from 'react';
-import logo from './logo.svg';
 import xlsx from 'xlsx';
 import './App.css';
 import functions from './functions.js';
+import 'bootstrap/dist/css/bootstrap.css';
 
 const unique = arr =>
   arr.reduce((res, v) => {
@@ -54,7 +54,6 @@ class App extends Component {
     rows.sort();
     cols.sort();
 
-    console.log(parsed, rows, cols);
     this.setState({parsed, rows, cols});
   }
   changeFile(file) {
@@ -87,7 +86,14 @@ class App extends Component {
           cell.v = cell.func(...args);
         }
         if (cell && cell.isInput) {
-          val = <input type="number" value={cell.v} onChange={e => this.changeCell(cell.id, e.target.value)} />;
+          val = (
+            <input
+              className="form-control"
+              type="number"
+              value={cell.v}
+              onChange={e => this.changeCell(cell.id, e.target.value)}
+            />
+          );
         } else if (cell) {
           val = cell.v;
         }
@@ -101,13 +107,9 @@ class App extends Component {
     });
 
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">Welcome to React, dont touch my penis</h1>
-          <input type="file" onChange={e => this.changeFile(e.target.files[0])} />
-        </header>
-        <table>
+      <div className="container">
+        <input type="file" onChange={e => this.changeFile(e.target.files[0])} />
+        <table className="table table-bordered">
           <tbody>{tableRows}</tbody>
         </table>
       </div>
