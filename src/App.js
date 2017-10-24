@@ -4,55 +4,48 @@ import './App.css';
 import functions from './functions.js';
 import 'bootstrap/dist/css/bootstrap.css';
 import {rangeReplacer} from './rangeReplacer.js';
-import {getRowCol, unique} from './utils.js';
+import {unique, getRow, getCol} from './utils.js';
 
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = {rows: []}; // TODO: set correct initial state
+    this.state = {rows: [], cols: [], cells: {}};
   }
   componentDidMount() {
     if (localStorage.sheet) this.loadSheet(localStorage.sheet);
   }
   loadSheet(data) {
     const parsed = xlsx.read(data).Sheets.Sheet1;
-    const keys = Object.keys(parsed).filter(key => key[0] !== '!');
+    const cells = Object.keys(parsed)
+      .filter(key => key[0] !== '!')
+      .reduce((res, key) => {
+        res[key] = parsed[key];
+        res[key].id = key;
+        return res;
+      }, {});
 
-    keys.forEach(key => {
-      parsed[key].id = key;
-    });
-
-    //TODO: add a catch to prevent functions being designated as inputs
-    keys.forEach(key => {
-      const cell = parsed[key];
+    Object.keys(cells).forEach(key => {
+      const cell = cells[key];
       if (cell.f) {
         cell.f = cell.f.replace(/[A-Z]\w*:[A-Z]\w*/g, rangeReplacer);
         cell.vars = unique(cell.f.match(/[A-Z]\w*/g));
-        cell.func = new Function(...cell.vars, `return ${cell.f};`); //eslint-disable-line
-        console.log(cell.func);
+        cell.func = new Function(...cell.vars, `return ${cell.f};`); // eslint-disable-line no-new-func
+        // console.log(cell.func);
         cell.vars.forEach(id => {
-          if (!parsed[id]) keys[id] = parsed[id] = {id};
-          parsed[id].isInput = true;
+          if (/^[A-Z]{1,2}\d+$/.test(id)) {
+            // looks like a cell name
+            if (!cells[id]) cells[id] = {id};
+            if (!cells[id].f) cells[id].isInput = true; // don't make function cells editable
+          }
         });
       }
     });
 
-    const rows = [];
-    const cols = [];
-    console.log(parsed);
+    const rows = unique(Object.keys(cells).map(getRow)).sort((a, b) => a - b);
+    const cols = unique(Object.keys(cells).map(getCol)).sort();
 
-    keys.forEach(key => {
-      const cell = parsed[key];
-      const {row, col} = getRowCol(cell.id);
-      if (!rows.includes(row)) rows.push(row);
-      if (!cols.includes(col)) cols.push(col);
-    });
-
-    rows.sort((a, b) => a - b);
-    cols.sort();
-
-    // TODO: store object without !keys, call it something better than "parsed"
-    this.setState({parsed, rows, cols});
+    // TODO: store object without !keys, call it something better than "cells"
+    this.setState({cells, rows, cols});
   }
   changeFile(file) {
     if (!file) return;
@@ -66,24 +59,24 @@ class App extends Component {
   }
   changeCell(id, val) {
     this.setState({
-      parsed: {...this.state.parsed, [id]: {...this.state.parsed[id], v: val}}
+      cells: {...this.state.cells, [id]: {...this.state.cells[id], v: val}}
     });
   }
 
   render() {
-    const {parsed, rows, cols} = this.state;
+    const {cells, rows, cols} = this.state;
 
     const tableRows = rows.map(rowNumber => {
       const rowColumns = cols.map(colLetter => {
-        const cell = parsed[colLetter + rowNumber];
+        const cell = cells[colLetter + rowNumber];
 
         // TODO: don't do this during render
         if (cell && cell.func) {
           const args = cell.vars.map(
             varName =>
               functions[varName] ||
-              (parsed[varName]
-                ? +parsed[varName].v
+              (cells[varName]
+                ? +cells[varName].v
                 : console.error(varName, 'in', cell, 'not found'))
           );
           cell.v = cell.func(...args);
