@@ -11,7 +11,8 @@ module.exports = {
     browser: true,
     node: true,
     es6: true,
-    mocha: true
+    mocha: true,
+    'jest/globals': true
   },
   extends: [
     'eslint:recommended',
@@ -20,7 +21,7 @@ module.exports = {
     'plugin:import/errors',
     'plugin:import/warnings'
   ],
-  plugins: ['react', 'prettier'],
+  plugins: ['react', 'prettier', 'jest'],
   rules: {
     'prefer-const': 'warn',
     'prefer-arrow-callback': 'warn',

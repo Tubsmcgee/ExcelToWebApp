@@ -2,9 +2,8 @@ import React, {Component} from 'react';
 import xlsx from 'xlsx';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.css';
-import {rangeReplacer} from './rangeReplacer.js';
 import {unique, getRow, getCol} from './utils.js';
-import {calculate} from './calculations.js';
+import {preprocessCells, calculate} from './calculations.js';
 import {Cell} from './Cell.js';
 
 class App extends Component {
@@ -13,38 +12,20 @@ class App extends Component {
     this.state = {rows: [], cols: [], cells: {}};
   }
   componentDidMount() {
-    if (localStorage.sheet) this.loadSheet(localStorage.sheet);
+    try {
+      if (localStorage.sheet) this.loadSheet(localStorage.sheet);
+    } catch (e) {
+      console.log(e);
+    }
   }
   loadSheet(data) {
     const parsed = xlsx.read(data).Sheets.Sheet1;
-    const cells = Object.keys(parsed)
-      .filter(key => key[0] !== '!')
-      .reduce((res, key) => {
-        res[key] = parsed[key];
-        res[key].id = key;
-        return res;
-      }, {});
-
-    Object.keys(cells).forEach(key => {
-      const cell = cells[key];
-      if (cell.f) {
-        cell.f = cell.f.replace(/[A-Z]\w*:[A-Z]\w*/g, rangeReplacer);
-        cell.vars = unique(cell.f.match(/[A-Z]\w*/g));
-        cell.func = new Function(...cell.vars, `return ${cell.f};`); // eslint-disable-line no-new-func
-        // console.log(cell.func);
-        cell.vars.forEach(id => {
-          if (/^[A-Z]{1,2}\d+$/.test(id)) {
-            if (!cells[id]) cells[id] = {id};
-            if (!cells[id].f) cells[id].isInput = true;
-          }
-        });
-      }
-    });
+    const cells = preprocessCells(parsed);
 
     const rows = unique(Object.keys(cells).map(getRow)).sort((a, b) => a - b);
     const cols = unique(Object.keys(cells).map(getCol)).sort();
 
-    this.setState({cells: calculate(cells), rows, cols});
+    this.setState({cells, rows, cols});
   }
   changeFile(file) {
     if (!file) return;
