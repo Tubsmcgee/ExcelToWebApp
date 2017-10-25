@@ -5,6 +5,7 @@ import 'bootstrap/dist/css/bootstrap.css';
 import {rangeReplacer} from './rangeReplacer.js';
 import {unique, getRow, getCol} from './utils.js';
 import {calculate} from './calculations.js';
+import {Cell} from './Cell.js';
 
 class App extends Component {
   constructor(props) {
@@ -63,20 +64,6 @@ class App extends Component {
       })
     });
   }
-  getCellValue(cell) {
-    if (cell && cell.isInput) {
-      return (
-        <input
-          className="form-control"
-          type="number"
-          value={cell.v}
-          onChange={e => this.changeCell(cell.id, e.target.value)}
-        />
-      );
-    } else if (cell) {
-      return cell.v;
-    }
-  }
   render() {
     const {cells, rows, cols} = this.state;
 
@@ -85,7 +72,10 @@ class App extends Component {
         const cell = cells[colLetter + rowNumber];
         return (
           <td key={colLetter + rowNumber} title={JSON.stringify(cell)}>
-            {this.getCellValue(cell)}
+            <Cell
+              cell={cell}
+              onChange={e => this.changeCell(cell.id, e.target.value)}
+            />
           </td>
         );
       });
