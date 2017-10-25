@@ -19,3 +19,5 @@ it('should calculate things in the right order', () => {
   console.log(JSON.stringify(calculated, null, 2));
   expect(calculated.A3.v).toBe(17);
 });
+
+// todo: add test for dependsOn
