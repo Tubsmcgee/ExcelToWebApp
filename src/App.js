@@ -1,10 +1,10 @@
 import React, {Component} from 'react';
 import xlsx from 'xlsx';
 import './App.css';
-import functions from './functions.js';
 import 'bootstrap/dist/css/bootstrap.css';
 import {rangeReplacer} from './rangeReplacer.js';
 import {unique, getRow, getCol} from './utils.js';
+import {calculate} from './calculations.js';
 
 class App extends Component {
   constructor(props) {
@@ -33,9 +33,8 @@ class App extends Component {
         // console.log(cell.func);
         cell.vars.forEach(id => {
           if (/^[A-Z]{1,2}\d+$/.test(id)) {
-            // looks like a cell name
             if (!cells[id]) cells[id] = {id};
-            if (!cells[id].f) cells[id].isInput = true; // don't make function cells editable
+            if (!cells[id].f) cells[id].isInput = true;
           }
         });
       }
@@ -44,8 +43,7 @@ class App extends Component {
     const rows = unique(Object.keys(cells).map(getRow)).sort((a, b) => a - b);
     const cols = unique(Object.keys(cells).map(getCol)).sort();
 
-    // TODO: store object without !keys, call it something better than "cells"
-    this.setState({cells, rows, cols});
+    this.setState({cells: calculate(cells), rows, cols});
   }
   changeFile(file) {
     if (!file) return;
@@ -59,46 +57,35 @@ class App extends Component {
   }
   changeCell(id, val) {
     this.setState({
-      cells: {...this.state.cells, [id]: {...this.state.cells[id], v: val}}
+      cells: calculate({
+        ...this.state.cells,
+        [id]: {...this.state.cells[id], v: val}
+      })
     });
   }
-
+  getCellValue(cell) {
+    if (cell && cell.isInput) {
+      return (
+        <input
+          className="form-control"
+          type="number"
+          value={cell.v}
+          onChange={e => this.changeCell(cell.id, e.target.value)}
+        />
+      );
+    } else if (cell) {
+      return cell.v;
+    }
+  }
   render() {
     const {cells, rows, cols} = this.state;
 
     const tableRows = rows.map(rowNumber => {
       const rowColumns = cols.map(colLetter => {
         const cell = cells[colLetter + rowNumber];
-
-        // TODO: don't do this during render
-        if (cell && cell.func) {
-          const args = cell.vars.map(
-            varName =>
-              functions[varName] ||
-              (cells[varName]
-                ? +cells[varName].v
-                : console.error(varName, 'in', cell, 'not found'))
-          );
-          cell.v = cell.func(...args);
-        }
-
-        // TODO: make a getCellValue function
-        let val = '';
-        if (cell && cell.isInput) {
-          val = (
-            <input
-              className="form-control"
-              type="number"
-              value={cell.v}
-              onChange={e => this.changeCell(cell.id, e.target.value)}
-            />
-          );
-        } else if (cell) {
-          val = cell.v;
-        }
         return (
           <td key={colLetter + rowNumber} title={JSON.stringify(cell)}>
-            {val}
+            {this.getCellValue(cell)}
           </td>
         );
       });
