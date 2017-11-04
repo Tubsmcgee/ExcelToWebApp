@@ -2,11 +2,11 @@ import functions from './functions.js';
 import {unique} from './utils.js';
 import {rangeReplacer} from './rangeReplacer.js';
 
-const calculateCell = (cell, cells) => {
+export const calculateCell = (cell, cells) => {
   const args = cell.vars.map(
     varName =>
       functions[varName] ||
-      (cells[varName]
+      (cells[varName] && cells[varName].v !== undefined
         ? +cells[varName].v
         : console.error(varName, 'in', cell, 'not found'))
   );
@@ -15,12 +15,12 @@ const calculateCell = (cell, cells) => {
   return cell;
 };
 
-const dependsOn = (a, b, cells) =>
-  a.vars.some(v => {
-    if (v === b.id) return true;
-    if (cells[v] && cells[v].vars) return dependsOn(cells[v], b, cells);
-    return false;
-  });
+// export const dependsOn = (a, b, cells) => !!a.vars && a.vars.includes(b.id);
+export const dependsOn = (a, b, cells) => {
+  if (!a || !a.vars) return false;
+  if (a.vars.includes(b.id)) return true;
+  return a.vars.some(el => dependsOn(cells[el], b, cells));
+};
 
 export const calculate = cells => {
   // todo: do this in preprocessCells
@@ -34,8 +34,6 @@ export const calculate = cells => {
       res[cell.id] = cell;
       return res;
     }, {});
-
-  console.log('calculatedCells', calculatedCells);
 
   return Object.keys(cells).reduce((res, key) => {
     res[key] = calculatedCells[key] || cells[key];
