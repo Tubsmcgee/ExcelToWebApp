@@ -20,12 +20,12 @@ class App extends Component {
   }
   loadSheet(data) {
     const parsed = xlsx.read(data).Sheets.Sheet1;
-    const cells = preprocessCells(parsed);
+    const {cells, functionCellIds} = preprocessCells(parsed);
 
     const rows = unique(Object.keys(cells).map(getRow)).sort((a, b) => a - b);
     const cols = unique(Object.keys(cells).map(getCol)).sort();
 
-    this.setState({cells, rows, cols});
+    this.setState({cells, rows, cols, functionCellIds});
   }
   changeFile(file) {
     if (!file) return;
@@ -39,10 +39,13 @@ class App extends Component {
   }
   changeCell(id, val) {
     this.setState({
-      cells: calculate({
-        ...this.state.cells,
-        [id]: {...this.state.cells[id], v: val}
-      })
+      cells: calculate(
+        {
+          ...this.state.cells,
+          [id]: {...this.state.cells[id], v: val}
+        },
+        this.state.functionCellIds
+      )
     });
   }
   render() {

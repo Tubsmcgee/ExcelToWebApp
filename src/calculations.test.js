@@ -1,6 +1,6 @@
 import {preprocessCells, dependsOn, calculateCell} from './calculations.js';
 
-const cellsArray = {
+const cells = {
   A1: {
     id: 'A1',
     vars: ['SUM', 'A2', 'A3'],
@@ -12,21 +12,21 @@ const cellsArray = {
   C1: {id: 'C1', vars: ['B17'], func: B17 => B17}
 };
 
-describe.only('calculateCell', () => {
+describe('calculateCell', () => {
   it('should return correct value', () => {
-    expect(calculateCell(cellsArray.A2, cellsArray).v).toBe(15);
+    expect(calculateCell('A2', cells).v).toBe(15);
   });
 });
 
 describe('dependsOn', () => {
   it('should return true if dependent', () => {
-    expect(dependsOn(cellsArray.A1, cellsArray.A2, cellsArray)).toBeTruthy();
+    expect(dependsOn('A1', 'A2', cells)).toBeTruthy();
   });
   it('should return false if not dependent', () => {
-    expect(dependsOn(cellsArray.A4, cellsArray.A2, cellsArray)).toBeFalsy();
+    expect(dependsOn('A4', 'A2', cells)).toBeFalsy();
   });
   it('should return true if indirectly dependent', () => {
-    expect(dependsOn(cellsArray.A1, cellsArray.A4, cellsArray)).toBeTruthy();
+    expect(dependsOn('A1', 'A4', cells)).toBeTruthy();
   });
 });
 
@@ -37,7 +37,8 @@ describe('preprocessCells', () => {
       A2: {v: 6},
       A3: {f: 'A1+A2'}
     });
-    expect(calculated.A3.v).toBe(11);
+    expect(calculated.cells.A3.v).toBe(11);
+    expect(calculated.functionCellIds).toEqual(['A3']);
   });
 
   it('should calculate things in the right order', () => {
@@ -47,7 +48,9 @@ describe('preprocessCells', () => {
       A2: {f: 'B1+A1'},
       B1: {v: 7}
     });
-    expect(calculated.A3.v).toBe(17);
+    expect(calculated.cells.A2.v).toBe(12);
+    expect(calculated.cells.A3.v).toBe(17);
+    expect(calculated.functionCellIds).toEqual(['A2', 'A3']);
   });
 });
 
