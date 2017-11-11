@@ -5,11 +5,12 @@ import 'bootstrap/dist/css/bootstrap.css';
 import {unique, getRow, getCol} from './utils.js';
 import {preprocessCells, calculate} from './calculations.js';
 import {Cell} from './Cell.js';
+import {BrowserRouter as Router, Link} from 'react-router-dom';
 
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = {rows: [], cols: [], cells: {}};
+    this.state = {rows: [], cols: [], cells: {}, sheetNames: []};
   }
   componentDidMount() {
     try {
@@ -27,7 +28,7 @@ class App extends Component {
     const rows = unique(Object.keys(cells).map(getRow)).sort((a, b) => a - b);
     const cols = unique(Object.keys(cells).map(getCol)).sort();
 
-    this.setState({cells, rows, cols, functionCellIds});
+    this.setState({cells, rows, cols, functionCellIds, sheetNames});
   }
   changeFile(file) {
     if (!file) return;
@@ -51,7 +52,7 @@ class App extends Component {
     });
   }
   render() {
-    const {cells, rows, cols} = this.state;
+    const {cells, rows, cols, sheetNames} = this.state;
 
     const tableRows = rows.map(rowNumber => {
       const rowColumns = cols.map(colLetter => {
@@ -69,12 +70,22 @@ class App extends Component {
     });
 
     return (
-      <div className="container">
-        <input type="file" onChange={e => this.changeFile(e.target.files[0])} />
-        <table className="table table-bordered">
-          <tbody>{tableRows}</tbody>
-        </table>
-      </div>
+      <Router>
+        <div className="container">
+          <input
+            type="file"
+            onChange={e => this.changeFile(e.target.files[0])}
+          />
+          {sheetNames.map(el => (
+            <Link key={el} to={'/' + el}>
+              {el}
+            </Link>
+          ))}
+          <table className="table table-bordered">
+            <tbody>{tableRows}</tbody>
+          </table>
+        </div>
+      </Router>
     );
   }
 }
