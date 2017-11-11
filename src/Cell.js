@@ -4,7 +4,7 @@ export const Cell = ({cell, onChange}) => {
     return (
       <input
         className="form-control"
-        type="number"
+        type="text"
         value={cell.v}
         onChange={onChange}
       />

@@ -19,7 +19,9 @@ class App extends Component {
     }
   }
   loadSheet(data) {
-    const parsed = xlsx.read(data).Sheets.Sheet1;
+    const parsedSheets = xlsx.read(data).Sheets;
+    const sheetNames = Object.keys(parsedSheets);
+    const parsed = parsedSheets[sheetNames[0]];
     const {cells, functionCellIds} = preprocessCells(parsed);
 
     const rows = unique(Object.keys(cells).map(getRow)).sort((a, b) => a - b);

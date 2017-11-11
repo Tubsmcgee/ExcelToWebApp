@@ -4,13 +4,15 @@ import {rangeReplacer} from './rangeReplacer.js';
 
 export const calculateCell = (cellId, cells) => {
   const cell = cells[cellId];
-  const args = cell.vars.map(
-    varName =>
-      functions[varName] ||
-      (cells[varName] && cells[varName].v !== undefined
-        ? +cells[varName].v
-        : console.error(varName, 'in', cells, 'not found or has no value'))
-  );
+  const args = cell.vars.map(varName => {
+    if (functions[varName]) return functions[varName];
+    if (cells[varName] && cells[varName].v !== undefined) {
+      if (isNaN(cells[varName].v)) return cells[varName].v;
+      return +cells[varName].v;
+    }
+    console.error(varName, 'in', cells, 'not found or has no value');
+    return 0;
+  });
   const result = cell.func(...args);
   if (result !== cell.v) return {...cell, v: result};
   return cell;
@@ -25,10 +27,10 @@ export const dependsOn = (aId, bId, cells) => {
 };
 
 export const calculate = (cells, functionCellIds) =>
-  functionCellIds.reduce((res, cellId) => {
-    res[cellId] = calculateCell(cellId, res);
-    return res;
-  }, cells);
+  functionCellIds.reduce(
+    (res, cellId) => ({...res, [cellId]: calculateCell(cellId, res)}),
+    cells
+  );
 
 export const preprocessCells = parsed => {
   const cells = Object.keys(parsed)
@@ -42,14 +44,29 @@ export const preprocessCells = parsed => {
   const functionCells = Object.values(cells).filter(cell => cell.f);
 
   functionCells.forEach(cell => {
-    cell.f = cell.f.replace(/[A-Z]\w*:[A-Z]\w*/g, rangeReplacer);
-    cell.vars = unique(cell.f.match(/[A-Z]\w*/g));
+    cell.f = cell.f
+      .split('"')
+      .map(
+        (el, i) =>
+          i % 2
+            ? el
+            : el.replace(/[A-Z]\w*:[A-Z]\w*/g, rangeReplacer).replace(/\$/g, '')
+      )
+      .join('"');
+    cell.vars = unique(
+      cell.f
+        .split('"')
+        .filter((el, i) => !(i % 2))
+        .join('"')
+        .match(/[A-Z]\w*/g)
+    );
     cell.func = new Function(...cell.vars, `return ${cell.f};`); // eslint-disable-line no-new-func
     // console.log(cell.func);
     cell.vars.forEach(id => {
       if (/^[A-Z]{1,2}\d+$/.test(id)) {
         if (!cells[id]) cells[id] = {id};
         if (!cells[id].f) cells[id].isInput = true;
+        if (cells[id].v === undefined) cells[id].v = '';
       }
     });
   });
@@ -59,8 +76,6 @@ export const preprocessCells = parsed => {
     .sort(
       (a, b) => (dependsOn(a, b, cells) ? 1 : dependsOn(b, a, cells) ? -1 : 0)
     );
-
-  console.log('functionCellIds', functionCellIds);
 
   return {
     cells: calculate(cells, functionCellIds),
