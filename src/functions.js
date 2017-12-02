@@ -9,6 +9,8 @@ const ISBLANK = a => !a;
 
 const AND = (...args) => args.every(el => el);
 
+// const COUNTIF = (...args, a) => args.map(el => a ? )
+
 export default {
   SUM,
   AVERAGE,

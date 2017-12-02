@@ -26,7 +26,7 @@ export const dependsOn = (aId, bId, cells) => {
   return a.vars.some(el => dependsOn(el, bId, cells));
 };
 
-export const calculate = (cells, functionCellIds) =>
+export const calculate = ({cells, functionCellIds}) =>
   functionCellIds.reduce(
     (res, cellId) => ({...res, [cellId]: calculateCell(cellId, res)}),
     cells
@@ -60,7 +60,11 @@ export const preprocessCells = parsed => {
         .join('"')
         .match(/[A-Z]\w*/g)
     );
-    cell.func = new Function(...cell.vars, `return ${cell.f};`); // eslint-disable-line no-new-func
+    try {
+      cell.func = new Function(...cell.vars, `return ${cell.f};`); // eslint-disable-line no-new-func
+    } catch (e) {
+      console.error('error creating function', cell.f, e);
+    }
     // console.log(cell.func);
     cell.vars.forEach(id => {
       if (/^[A-Z]{1,2}\d+$/.test(id)) {
@@ -78,7 +82,7 @@ export const preprocessCells = parsed => {
     );
 
   return {
-    cells: calculate(cells, functionCellIds),
+    cells: calculate({cells, functionCellIds}),
     functionCellIds
   };
 };

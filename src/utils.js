@@ -19,3 +19,8 @@ export const unique = arr =>
     if (!res.includes(v)) res.push(v);
     return res;
   }, []);
+
+export const setIn = (path, val, obj = {}) =>
+  path.length
+    ? {...obj, [path[0]]: setIn(path.slice(1), val, obj[path[0]])}
+    : val;
