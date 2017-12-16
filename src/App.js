@@ -85,7 +85,7 @@ class App extends Component {
           </ul>
           <Route
             path="/:sheetName"
-            component={({match: {params: {sheetName}}}) => {
+            render={({match: {params: {sheetName}}}) => {
               const {cells, rows = [], cols = []} = sheets[sheetName] || {};
               return (
                 <Table

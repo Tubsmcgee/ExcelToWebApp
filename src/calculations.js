@@ -1,5 +1,5 @@
 import functions from './functions.js';
-import {unique} from './utils.js';
+import {unique, isIndexEven} from './utils.js';
 import {rangeReplacer} from './rangeReplacer.js';
 
 export const calculateCell = (cellId, cells) => {
@@ -46,17 +46,18 @@ export const preprocessCells = parsed => {
   functionCells.forEach(cell => {
     cell.f = cell.f
       .split('"')
-      .map(
-        (el, i) =>
-          i % 2
-            ? el
-            : el.replace(/[A-Z]\w*:[A-Z]\w*/g, rangeReplacer).replace(/\$/g, '')
-      )
+      .map((el, i) => {
+        if (i % 2) return el;
+        return el
+          .replace(/[A-Z]\w*:[A-Z]\w*/g, rangeReplacer)
+          .replace(/\$/g, '')
+          .replace(/&/g, '+""+');
+      })
       .join('"');
     cell.vars = unique(
       cell.f
         .split('"')
-        .filter((el, i) => !(i % 2))
+        .filter(isIndexEven)
         .join('"')
         .match(/[A-Z]\w*/g)
     );

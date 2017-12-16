@@ -24,3 +24,5 @@ export const setIn = (path, val, obj = {}) =>
   path.length
     ? {...obj, [path[0]]: setIn(path.slice(1), val, obj[path[0]])}
     : val;
+
+export const isIndexEven = (el, i) => !(i % 2);

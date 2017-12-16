@@ -6,7 +6,7 @@ export const Table = ({rows, cols, cells, changeCell, sheetName}) => {
     const rowColumns = cols.map(colLetter => {
       const cell = cells[colLetter + rowNumber];
       return (
-        <td key={colLetter + rowNumber} title={JSON.stringify(cell)}>
+        <td key={colLetter + rowNumber} title={cell && cell.f}>
           <Cell
             cell={cell}
             onChange={e => changeCell(sheetName, cell.id, e.target.value)}

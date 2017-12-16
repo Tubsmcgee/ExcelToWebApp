@@ -9,6 +9,11 @@ const ISBLANK = a => !a;
 
 const AND = (...args) => args.every(el => el);
 
+const CONCATENATE = (...args) => args.join('');
+
+const COUNTA = (...args) =>
+  args.reduce((count, el) => (el !== '' ? count + 1 : count), 0);
+
 // const COUNTIF = (...args, a) => args.map(el => a ? )
 
 export default {
@@ -16,5 +21,7 @@ export default {
   AVERAGE,
   IF,
   ISBLANK,
-  AND
+  AND,
+  CONCATENATE,
+  COUNTA
 };
