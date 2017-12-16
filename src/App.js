@@ -4,7 +4,7 @@ import './App.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import {unique, getRow, getCol, setIn} from './utils.js';
 import {preprocessCells, calculate} from './calculations.js';
-import {BrowserRouter as Router, Link, Route} from 'react-router-dom';
+import {BrowserRouter as Router, Route, NavLink} from 'react-router-dom';
 import {Table} from './Table.js';
 
 class App extends Component {
@@ -70,11 +70,19 @@ class App extends Component {
             type="file"
             onChange={e => this.changeFile(e.target.files[0])}
           />
-          {Object.keys(sheets).map(el => (
-            <Link key={el} to={'/' + el}>
-              {el}
-            </Link>
-          ))}
+          <ul style={{marginBottom: '10px'}} className="nav nav-tabs">
+            {Object.keys(sheets).map(el => (
+              <li className="nav-item" key={el}>
+                <NavLink
+                  activeClassName="active"
+                  className="nav-link"
+                  to={'/' + el}
+                >
+                  {el}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
           <Route
             path="/:sheetName"
             component={({match: {params: {sheetName}}}) => {
