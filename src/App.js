@@ -30,6 +30,7 @@ class App extends Component {
       res[sheetName] = {cells, functionCellIds, rows, cols};
       return res;
     }, {});
+    //TODO: do calculations here and not inside preprocessCells
     console.log(sheets);
     this.setState({sheets});
   }
@@ -52,8 +53,8 @@ class App extends Component {
       this.state
     );
     const calculatedState = setIn(
-      ['sheets', currentSheet, 'cells'],
-      calculate(newState.sheets[currentSheet]),
+      ['sheets'],
+      calculate(newState.sheets),
       newState
     );
 

@@ -1,10 +1,11 @@
 import functions from './functions.js';
-import {unique, isIndexEven} from './utils.js';
+import {unique, isIndexEven, sheetNameReplacer, objectMapper} from './utils.js';
 import {rangeReplacer} from './rangeReplacer.js';
 
-export const calculateCell = (cellId, cells) => {
+export const calculateCell = (cellId, cells, sheets) => {
   const cell = cells[cellId];
   const args = cell.vars.map(varName => {
+    if (varName === 'sheets') return sheets;
     if (functions[varName]) return functions[varName];
     if (cells[varName] && cells[varName].v !== undefined) {
       if (isNaN(cells[varName].v)) return cells[varName].v;
@@ -26,10 +27,18 @@ export const dependsOn = (aId, bId, cells) => {
   return a.vars.some(el => dependsOn(el, bId, cells));
 };
 
-export const calculate = ({cells, functionCellIds}) =>
-  functionCellIds.reduce(
-    (res, cellId) => ({...res, [cellId]: calculateCell(cellId, res)}),
-    cells
+export const calculate = sheets =>
+  //{cells, functionCellIds}
+  objectMapper(
+    ({cells, functionCellIds}) =>
+      functionCellIds.reduce(
+        (res, cellId) => ({
+          ...res,
+          [cellId]: calculateCell(cellId, res, sheets)
+        }),
+        cells
+      ),
+    sheets
   );
 
 export const preprocessCells = parsed => {
@@ -51,15 +60,18 @@ export const preprocessCells = parsed => {
         return el
           .replace(/[A-Z]\w*:[A-Z]\w*/g, rangeReplacer)
           .replace(/\$/g, '')
-          .replace(/&/g, '+""+');
+          .replace(/&/g, '+""+')
+          .replace(/'.+'!|[^ ]+!/g, sheetNameReplacer); //TODO: test this nonsense
       })
       .join('"');
+
     cell.vars = unique(
       cell.f
         .split('"')
         .filter(isIndexEven)
         .join('"')
-        .match(/[A-Z]\w*/g)
+        .match(/(^|[^.])[A-Z]\w*/g)
+        .map(el => (/[A-Z]/.test(el[0]) ? el : el.slice(1))) //TODO: Test this other nonsense
     );
     try {
       cell.func = new Function(...cell.vars, `return ${cell.f};`); // eslint-disable-line no-new-func
@@ -67,6 +79,7 @@ export const preprocessCells = parsed => {
       console.error('error creating function', cell.f, e);
     }
     // console.log(cell.func);
+
     cell.vars.forEach(id => {
       if (/^[A-Z]{1,2}\d+$/.test(id)) {
         if (!cells[id]) cells[id] = {id};
@@ -83,7 +96,7 @@ export const preprocessCells = parsed => {
     );
 
   return {
-    cells: calculate({cells, functionCellIds}),
+    cells: calculate({cells, functionCellIds}), //don't calculate here
     functionCellIds
   };
 };
