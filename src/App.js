@@ -22,7 +22,8 @@ class App extends Component {
   loadSheet(data) {
     const parsedSheets = xlsx.read(data).Sheets;
     const sheetNames = Object.keys(parsedSheets);
-    const sheets = sheetNames.reduce((res, sheetName) => {
+    const oldSheets = sheetNames.reduce((res, sheetName) => {
+      console.log(sheetName);
       const sheet = parsedSheets[sheetName];
       const {cells, functionCellIds} = preprocessCells(sheet);
       const rows = unique(Object.keys(cells).map(getRow)).sort((a, b) => a - b);
@@ -30,8 +31,9 @@ class App extends Component {
       res[sheetName] = {cells, functionCellIds, rows, cols};
       return res;
     }, {});
+    console.log(oldSheets);
+    const sheets = calculate(oldSheets);
     //TODO: do calculations here and not inside preprocessCells
-    console.log(sheets);
     this.setState({sheets});
   }
   changeFile(file) {

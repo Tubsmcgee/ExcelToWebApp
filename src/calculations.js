@@ -27,19 +27,27 @@ export const dependsOn = (aId, bId, cells) => {
   return a.vars.some(el => dependsOn(el, bId, cells));
 };
 
-export const calculate = sheets =>
-  //{cells, functionCellIds}
-  objectMapper(
-    ({cells, functionCellIds}) =>
-      functionCellIds.reduce(
-        (res, cellId) => ({
-          ...res,
-          [cellId]: calculateCell(cellId, res, sheets)
-        }),
-        cells
-      ),
-    sheets
-  );
+export const calculate = sheets => {
+  console.log(sheets);
+  Object.keys(sheets).reduce((res, sheet) => {
+    res[sheet] = sheets[sheet].functionCellIds.reduce(
+      (cellsRes, cellId) => ({
+        ...cellsRes,
+        [cellId]: calculateCell(cellId, cellsRes, sheets)
+      }),
+      sheets[sheet].cells
+    );
+  }, sheets);
+};
+
+// ({cells, functionCellIds}) =>
+//   functionCellIds.reduce(
+//     (res, cellId) => ({
+//       ...res,
+//       [cellId]: calculateCell(cellId, res, sheets)
+//     }),
+//     cells
+//   )
 
 export const preprocessCells = parsed => {
   const cells = Object.keys(parsed)
@@ -71,14 +79,19 @@ export const preprocessCells = parsed => {
         .filter(isIndexEven)
         .join('"')
         .match(/(^|[^.])[A-Z]\w*/g)
-        .map(el => (/[A-Z]/.test(el[0]) ? el : el.slice(1))) //TODO: Test this other nonsense
+        ? cell.f
+            .split('"')
+            .filter(isIndexEven)
+            .join('"')
+            .match(/(^|[^.])[A-Z]\w*/g)
+            .map(el => (/[A-Z]/.test(el[0]) ? el : el.slice(1)))
+        : [] //TODO: Test this other nonsense
     );
     try {
       cell.func = new Function(...cell.vars, `return ${cell.f};`); // eslint-disable-line no-new-func
     } catch (e) {
       console.error('error creating function', cell.f, e);
     }
-    // console.log(cell.func);
 
     cell.vars.forEach(id => {
       if (/^[A-Z]{1,2}\d+$/.test(id)) {
@@ -96,7 +109,7 @@ export const preprocessCells = parsed => {
     );
 
   return {
-    cells: calculate({cells, functionCellIds}), //don't calculate here
+    cells,
     functionCellIds
   };
 };
