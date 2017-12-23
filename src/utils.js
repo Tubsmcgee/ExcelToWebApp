@@ -30,8 +30,10 @@ export const isIndexEven = (el, i) => !(i % 2);
 export const sheetNameReplacer = str =>
   `sheets["${str.slice(0, -1).replace(/'/g, '')}"].`;
 
-export const objectMapper = (func, obj) =>
+export const objectMapper = (func, obj) => {
+  console.log(Object.keys(obj));
   Object.keys(obj).reduce((res, key) => {
     res[key] = func(key, obj[key], obj);
     return res;
   }, {});
+};
