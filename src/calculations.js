@@ -22,7 +22,7 @@ export const getVarNames = funcStr =>
       .filter(isIndexEven)
       .join('"')
       .match(/(^|[^.])[A-Z]\w*/g) || []
-    ).map(el => (/[A-Z]/.test(el[0]) ? el : el.slice(1))) //TODO: Test this other nonsense
+    ).map(el => (/[A-Z]/.test(el[0]) ? el : el.slice(1)))
   );
 
 export const calculateCell = (cellId, cells, sheets) => {
@@ -80,6 +80,7 @@ export const preprocessCells = parsed => {
   const functionCells = Object.values(cells).filter(cell => cell.f);
 
   functionCells.forEach(cell => {
+    //TODO: Make pure
     const funcStr = excelFuncToJS(cell.f);
     cell.vars = getVarNames(funcStr);
     try {

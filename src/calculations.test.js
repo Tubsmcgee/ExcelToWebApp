@@ -2,7 +2,8 @@ import {
   preprocessCells,
   dependsOn,
   calculateCell,
-  excelFuncToJS
+  excelFuncToJS,
+  getVarNames
 } from './calculations.js';
 
 const cells = {
@@ -17,16 +18,49 @@ const cells = {
   C1: {id: 'C1', vars: ['B17'], func: B17 => B17}
 };
 
-describe.only('excelFuncToJS', () => {
-  /*
-  should ignore strings
-  should replace excel range notation with cell names (A1:A3)=(A1,A2,A3)
-  should remove dollar signs
-  should replace excel & string concatination
-  should replace sheet name references with JS sheet references sheet2!A1 = Sheets["sheet2"].cells.A1.v
-  */
+describe('excelFuncToJS', () => {
+  it('should ignore strings', () => {
+    expect(excelFuncToJS('("Poop", A2)')).toBe('("Poop", A2)');
+    expect(excelFuncToJS('"A1:A2"')).toBe('"A1:A2"');
+  });
+  it('should replace excel range notation with cell names', () => {
+    expect(excelFuncToJS('(A1:A3)')).toBe('(A1,A2,A3)');
+    expect(excelFuncToJS('SUM(A1:D1)')).toBe('SUM(A1,B1,C1,D1)');
+    expect(excelFuncToJS('SUM(A1:B3)')).toBe('SUM(A1,B1,A2,B2,A3,B3)');
+  });
+  it('should remove dollar signs', () => {
+    expect(excelFuncToJS('$A1')).toBe('A1');
+  });
+  it('should replace excel & string concatination', () => {
+    expect(excelFuncToJS('"welcome " & C10')).toBe('"welcome " +""+ C10');
+  });
   it('should replace sheet name references with JS sheet references', () => {
     expect(excelFuncToJS('sheet2!A2')).toBe('Sheets["sheet2"].cells.A2.v');
+    expect(excelFuncToJS("'.'!A2")).toBe('Sheets["."].cells.A2.v');
+  });
+});
+
+describe('getVarNames', () => {
+  it('should ignore strings', () => {
+    expect(getVarNames('CONCATENATE("A3",A2)')).toEqual(['CONCATENATE', 'A2']);
+  });
+  it('should not crash if there are no variables', () => {
+    expect(getVarNames('5')).toEqual([]);
+    expect(getVarNames('"string"')).toEqual([]);
+  });
+  it('should not get variables after a .', () => {
+    expect(getVarNames('Sheets["sheet1"].cells.A1.v + A5')).toEqual([
+      'Sheets',
+      'A5'
+    ]);
+  });
+  it('Should only have unique variable names', () => {
+    expect(getVarNames('SUM(A1,A2)+SUM(A2,A3)')).toEqual([
+      'SUM',
+      'A1',
+      'A2',
+      'A3'
+    ]);
   });
 });
 
@@ -46,29 +80,21 @@ describe('dependsOn', () => {
   it('should return true if indirectly dependent', () => {
     expect(dependsOn('A1', 'A4', cells)).toBeTruthy();
   });
+  // it('should true if on different sheets and dependent', () => {
+  //   expect(dependsOn(
+  // })
 });
 
 describe('preprocessCells', () => {
-  it.skip('should calculate simple things', () => {
+  it('should modify the sheet by providing cells and IDs', () => {
     const calculated = preprocessCells({
       A1: {v: 5},
       A2: {v: 6},
       A3: {f: 'A1+A2'}
     });
-    expect(calculated.cells.A3.v).toBe(11);
     expect(calculated.functionCellIds).toEqual(['A3']);
-  });
-
-  it.skip('should calculate things in the right order', () => {
-    const calculated = preprocessCells({
-      A1: {v: 5},
-      A3: {f: 'A1+A2'},
-      A2: {f: 'B1+A1'},
-      B1: {v: 7}
-    });
-    expect(calculated.cells.A2.v).toBe(12);
-    expect(calculated.cells.A3.v).toBe(17);
-    expect(calculated.functionCellIds).toEqual(['A2', 'A3']);
+    expect(calculated.cells.A1.id).toEqual('A1');
+    expect(calculated.cells.A3.vars).toEqual(['A1', 'A2']);
   });
 });
 

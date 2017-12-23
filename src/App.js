@@ -47,7 +47,6 @@ class App extends Component {
     reader.readAsBinaryString(file);
   }
 
-  //TODO: do calculations on cells
   changeCell = (currentSheet, id, val) => {
     const newState = setIn(
       ['sheets', currentSheet, 'cells', id, 'v'],
