@@ -97,5 +97,3 @@ describe('preprocessCells', () => {
     expect(calculated.cells.A3.vars).toEqual(['A1', 'A2']);
   });
 });
-
-// todo: add test for dependsOn

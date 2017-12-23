@@ -23,6 +23,7 @@ class App extends Component {
     const parsedSheets = xlsx.read(data).Sheets;
     const sheetNames = Object.keys(parsedSheets);
     const sheets = calculate(
+      //TODO: getFunctionCellIds here
       sheetNames.reduce((res, sheetName) => {
         const sheet = parsedSheets[sheetName];
         const {cells, functionCellIds} = preprocessCells(sheet);
