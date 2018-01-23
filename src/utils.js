@@ -10,28 +10,24 @@ export const numToCol = number =>
   String.fromCharCode(number % 26 + 64);
 
 export const getRow = cellName =>
-  parseInt(cellName.replace(/^[A-Z]+/g, ''), 10);
+  parseInt(cellName.split('_')[0].replace(/^[A-Z]+/g, ''), 10);
 
-export const getCol = cellName => cellName.replace(/\d/g, '');
-
-export const unique = arr =>
-  arr.reduce((res, v) => {
-    if (!res.includes(v)) res.push(v);
-    return res;
-  }, []);
-
-export const setIn = (path, val, obj = {}) =>
-  path.length
-    ? {...obj, [path[0]]: setIn(path.slice(1), val, obj[path[0]])}
-    : val;
+export const getCol = cellName => cellName.split('_')[0].replace(/\d/g, '');
 
 export const isIndexEven = (el, i) => !(i % 2);
 
-export const sheetNameReplacer = (full, sheetName, cellName) =>
-  `Sheets["${sheetName.replace(/'/g, '')}"].cells.${cellName}.v`;
+export const rangeReplacer = matchString => {
+  const [start, end] = matchString.split(':').map(cellName => ({
+    row: getRow(cellName),
+    colNum: colToNum(getCol(cellName))
+  }));
+  const result = [];
+  for (let row = start.row; row <= end.row; row++) {
+    for (let col = start.colNum; col <= end.colNum; col++) {
+      result.push(numToCol(col) + row);
+    }
+  }
+  return result.join(',');
+};
 
-export const objectMapper = (func, obj) =>
-  Object.keys(obj).reduce((res, key) => {
-    res[key] = func(obj[key], key, obj);
-    return res;
-  }, {});
+export const toLongName = (sheetNum, cellName) => `${cellName}_${sheetNum}`;

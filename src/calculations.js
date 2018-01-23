@@ -1,8 +1,14 @@
 import functions from './functions.js';
-import {unique, isIndexEven, sheetNameReplacer, objectMapper} from './utils.js';
-import {rangeReplacer} from './rangeReplacer.js';
+import {
+  getRow,
+  getCol,
+  isIndexEven,
+  toLongName,
+  rangeReplacer
+} from './utils.js';
+import {uniq, map, fromPairs, merge} from 'ramda';
 
-export const excelFuncToJS = funcStr =>
+export const excelFuncToJS = (funcStr, sheetNames, sheetNum) =>
   funcStr
     .split('"')
     .map((el, i) => {
@@ -11,12 +17,17 @@ export const excelFuncToJS = funcStr =>
         .replace(/[A-Z]\w*:[A-Z]\w*/g, rangeReplacer)
         .replace(/\$/g, '')
         .replace(/&/g, '+""+')
-        .replace(/('.+'|\w+)!([A-Z]+\d+)/g, sheetNameReplacer);
+        .replace(/('.+'|\w+)!([A-Z]+\d+)/g, (full, sheetName, cellName) =>
+          toLongName(sheetNames.indexOf(sheetName.replace(/'/g, '')), cellName)
+        )
+        .replace(/([A-Z]+\d+)\b/g, (full, cellName) =>
+          toLongName(sheetNum, cellName)
+        );
     })
     .join('"');
 
 export const getVarNames = funcStr =>
-  unique(
+  uniq(
     (
       funcStr
         .split('"')
@@ -54,10 +65,8 @@ export const dependsOn = (aId, bId, cells) => {
   return a.vars.some(el => dependsOn(el, bId, cells));
 };
 
-export const addDependencies = sheets => sheets;
-
 export const calculate = sheets =>
-  objectMapper(
+  map(
     sheet => ({
       ...sheet,
       cells: sheet.functionCellIds.reduce(
@@ -71,39 +80,75 @@ export const calculate = sheets =>
     sheets
   );
 
-export const preprocessCells = parsed => {
-  const cells = Object.keys(parsed)
-    .filter(key => key[0] !== '!')
-    .reduce((res, key) => {
-      res[key] = parsed[key];
-      res[key].id = key;
-      return res;
-    }, {});
+export const preprocessCells = (parsed, sheetNames, sheetNum) =>
+  fromPairs(
+    Object.keys(parsed)
+      .filter(key => key[0] !== '!')
+      .map(id => {
+        const cell = parsed[id];
+        let vars, func, funcStr;
 
-  const functionCells = Object.values(cells).filter(cell => cell.f);
-
-  functionCells.forEach(cell => {
-    //TODO: Make pure
-    const funcStr = excelFuncToJS(cell.f);
-    cell.vars = getVarNames(funcStr);
-    try {
-      cell.func = new Function(...cell.vars, `return ${funcStr};`); // eslint-disable-line no-new-func
-    } catch (e) {
-      console.error('error creating function', funcStr, cell, e);
-    }
-
-    cell.vars.forEach(id => {
-      if (/^[A-Z]{1,2}\d+$/.test(id)) {
-        if (!cells[id]) cells[id] = {id};
-        if (!cells[id].f) cells[id].isInput = true; //TODO: support multiple sheets
-        if (cells[id].v === undefined) cells[id].v = '';
-      }
-    });
-  });
-
-  const functionCellIds = functionCells.map(c => c.id).sort(
-    (a, b) => (dependsOn(a, b, cells) ? 1 : dependsOn(b, a, cells) ? -1 : 0) //TODO: Adress multiple sheets
+        if (cell.f) {
+          funcStr = excelFuncToJS(cell.f, sheetNames, sheetNum);
+          vars = getVarNames(funcStr);
+          try {
+            func = new Function(...vars, `return ${funcStr};`); // eslint-disable-line no-new-func
+          } catch (e) {
+            console.error('error creating function', funcStr, cell, e);
+          }
+        }
+        id = toLongName(sheetNum, id);
+        return [
+          id,
+          {
+            v: cell.v,
+            id,
+            deps: [],
+            ...(cell.f ? {f: cell.f, func, vars, funcStr} : {})
+          }
+        ];
+      })
   );
 
-  return {cells, functionCellIds};
+// TODO: make non-mutating
+export const addDependencies = cells => {
+  Object.keys(cells).forEach(id => {
+    (cells[id].vars || []).forEach(depId => {
+      // if (!cells[v]) console.error(v, id);
+      console.log('dep', id, depId);
+      if (/^[A-Z]+\d+_\d+$/.test(depId)) {
+        console.log(depId);
+        if (!cells[depId]) cells[depId] = {id: depId, deps: []};
+        if (!cells[depId].f) cells[depId].isInput = true;
+        if (cells[depId].v === undefined) cells[depId].v = '';
+      }
+
+      if (cells[depId]) cells[depId].deps.push(id);
+    });
+  });
+  return cells;
+};
+
+export const processSheets = parsedSheets => {
+  const sheetNames = Object.keys(parsedSheets);
+
+  const {cells, sheets} = sheetNames.reduce(
+    (res, sheetName, i) => {
+      const cells = preprocessCells(parsedSheets[sheetName], sheetNames, i);
+      const rows = uniq(Object.keys(cells).map(getRow)).sort((a, b) => a - b);
+      const cols = uniq(Object.keys(cells).map(getCol)).sort();
+      return {
+        sheets: res.sheets.concat({rows, cols, sheetName}),
+        cells: merge(res.cells, cells)
+      };
+    },
+    {sheets: [], cells: {}}
+  );
+
+  const res = {
+    cells: addDependencies(cells),
+    sheets
+  };
+  console.log('res', res);
+  return res;
 };

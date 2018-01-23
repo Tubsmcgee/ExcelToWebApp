@@ -2,15 +2,15 @@ import React, {Component} from 'react';
 import xlsx from 'xlsx';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.css';
-import {unique, getRow, getCol, setIn} from './utils.js';
-import {preprocessCells, calculate, addDependencies} from './calculations.js';
+import {processSheets, calculate} from './calculations.js';
 import {BrowserRouter as Router, Route, NavLink} from 'react-router-dom';
 import {Table} from './Table.js';
+import {assocPath} from 'ramda';
 
 class App extends Component {
   constructor(props) {
     super(props);
-    this.state = {sheets: {}};
+    this.state = {sheets: [], cells: {}};
   }
   componentDidMount() {
     try {
@@ -21,17 +21,7 @@ class App extends Component {
   }
   loadSheet(data) {
     const parsedSheets = xlsx.read(data).Sheets;
-    const sheetNames = Object.keys(parsedSheets);
-    const preprocessSheets = sheetNames.reduce((res, sheetName) => {
-      const sheet = parsedSheets[sheetName];
-      const {cells, functionCellIds} = preprocessCells(sheet);
-      const rows = unique(Object.keys(cells).map(getRow)).sort((a, b) => a - b);
-      const cols = unique(Object.keys(cells).map(getCol)).sort();
-      res[sheetName] = {cells, functionCellIds, rows, cols};
-      return res;
-    }, {});
-    const sheets = addDependencies(preprocessSheets);
-    this.setState({sheets});
+    this.setState(processSheets(parsedSheets));
   }
   changeFile(file) {
     if (!file) return;
@@ -44,24 +34,20 @@ class App extends Component {
     reader.readAsBinaryString(file);
   }
 
-  changeCell = (currentSheet, id, val) => {
-    const newState = setIn(
-      ['sheets', currentSheet, 'cells', id, 'v'],
-      val,
-      this.state
-    );
-    const calculatedState = setIn(
-      ['sheets'],
-      calculate(newState.sheets),
-      newState
-    );
+  changeCell = (id, val) => {
+    const newState = assocPath(['cells', id, 'v'], val, this.state);
+    // TODO CALCULATE
+    // const calculatedState = assocPath(
+    //   ['sheets'],
+    //   calculate(newState.sheets),
+    //   newState
+    // );
 
-    this.setState(calculatedState);
+    this.setState(newState);
   };
 
   render() {
-    const {sheets} = this.state;
-
+    const {sheets, cells} = this.state;
     return (
       <Router>
         <div className="container">
@@ -70,14 +56,14 @@ class App extends Component {
             onChange={e => this.changeFile(e.target.files[0])}
           />
           <ul style={{marginBottom: '10px'}} className="nav nav-tabs">
-            {Object.keys(sheets).map(el => (
-              <li className="nav-item" key={el}>
+            {sheets.map(({sheetName}) => (
+              <li className="nav-item" key={sheetName}>
                 <NavLink
                   activeClassName="active"
                   className="nav-link"
-                  to={'/' + el}
+                  to={'/' + sheetName}
                 >
-                  {el}
+                  {sheetName}
                 </NavLink>
               </li>
             ))}
@@ -85,15 +71,18 @@ class App extends Component {
           <Route
             path="/:sheetName"
             render={({match: {params: {sheetName}}}) => {
-              const {cells, rows = [], cols = []} = sheets[sheetName] || {};
+              const sheetNum = sheets.findIndex(s => s.sheetName === sheetName);
               return (
-                <Table
-                  rows={rows}
-                  cols={cols}
-                  cells={cells}
-                  changeCell={this.changeCell}
-                  sheetName={sheetName}
-                />
+                sheetNum > -1 && (
+                  <Table
+                    rows={sheets[sheetNum].rows}
+                    cols={sheets[sheetNum].cols}
+                    cells={cells}
+                    sheetNum={sheetNum}
+                    changeCell={this.changeCell}
+                    sheetName={sheetName}
+                  />
+                )
               );
             }}
           />
