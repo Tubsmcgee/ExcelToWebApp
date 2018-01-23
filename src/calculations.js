@@ -1,11 +1,5 @@
 import functions from './functions.js';
-import {
-  getRow,
-  getCol,
-  isIndexEven,
-  toLongName,
-  rangeReplacer
-} from './utils.js';
+import {getRow, getCol, isIndexEven, toFullId, rangeReplacer} from './utils.js';
 import {uniq, map, fromPairs, merge} from 'ramda';
 
 export const excelFuncToJS = (funcStr, sheetNames, sheetNum) =>
@@ -18,10 +12,10 @@ export const excelFuncToJS = (funcStr, sheetNames, sheetNum) =>
         .replace(/\$/g, '')
         .replace(/&/g, '+""+')
         .replace(/('.+'|\w+)!([A-Z]+\d+)/g, (full, sheetName, cellName) =>
-          toLongName(sheetNames.indexOf(sheetName.replace(/'/g, '')), cellName)
+          toFullId(sheetNames.indexOf(sheetName.replace(/'/g, '')), cellName)
         )
         .replace(/([A-Z]+\d+)\b/g, (full, cellName) =>
-          toLongName(sheetNum, cellName)
+          toFullId(sheetNum, cellName)
         );
     })
     .join('"');
@@ -58,13 +52,6 @@ export const calculateCell = (cellId, cells, sheets) => {
   }
 };
 
-export const dependsOn = (aId, bId, cells) => {
-  const a = cells[aId];
-  if (!a || !a.vars) return false;
-  if (a.vars.includes(bId)) return true;
-  return a.vars.some(el => dependsOn(el, bId, cells));
-};
-
 export const calculate = sheets =>
   map(
     sheet => ({
@@ -97,12 +84,12 @@ export const preprocessCells = (parsed, sheetNames, sheetNum) =>
             console.error('error creating function', funcStr, cell, e);
           }
         }
-        id = toLongName(sheetNum, id);
+        const fullId = toFullId(sheetNum, id);
         return [
-          id,
+          fullId,
           {
             v: cell.v,
-            id,
+            id: fullId,
             deps: [],
             ...(cell.f ? {f: cell.f, func, vars, funcStr} : {})
           }
@@ -114,10 +101,7 @@ export const preprocessCells = (parsed, sheetNames, sheetNum) =>
 export const addDependencies = cells => {
   Object.keys(cells).forEach(id => {
     (cells[id].vars || []).forEach(depId => {
-      // if (!cells[v]) console.error(v, id);
-      console.log('dep', id, depId);
       if (/^[A-Z]+\d+_\d+$/.test(depId)) {
-        console.log(depId);
         if (!cells[depId]) cells[depId] = {id: depId, deps: []};
         if (!cells[depId].f) cells[depId].isInput = true;
         if (cells[depId].v === undefined) cells[depId].v = '';
@@ -145,10 +129,5 @@ export const processSheets = parsedSheets => {
     {sheets: [], cells: {}}
   );
 
-  const res = {
-    cells: addDependencies(cells),
-    sheets
-  };
-  console.log('res', res);
-  return res;
+  return {cells: addDependencies(cells), sheets};
 };

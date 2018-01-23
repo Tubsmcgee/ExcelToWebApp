@@ -30,4 +30,4 @@ export const rangeReplacer = matchString => {
   return result.join(',');
 };
 
-export const toLongName = (sheetNum, cellName) => `${cellName}_${sheetNum}`;
+export const toFullId = (sheetNum, cellName) => `${cellName}_${sheetNum}`;

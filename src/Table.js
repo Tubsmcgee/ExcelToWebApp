@@ -1,11 +1,11 @@
 import React from 'react';
 import {Cell} from './Cell.js';
-import {toLongName} from './utils.js';
+import {toFullId} from './utils.js';
 
 export const Table = ({rows, cols, cells, sheetNum, changeCell}) => {
   const tableRows = rows.map(rowNumber => {
     const rowColumns = cols.map(colLetter => {
-      const cell = cells[toLongName(sheetNum, colLetter + rowNumber)];
+      const cell = cells[toFullId(sheetNum, colLetter + rowNumber)];
       return (
         <td key={colLetter + rowNumber} title={cell && cell.f}>
           <Cell

@@ -73,14 +73,13 @@ class App extends Component {
             render={({match: {params: {sheetName}}}) => {
               const sheetNum = sheets.findIndex(s => s.sheetName === sheetName);
               return (
-                sheetNum > -1 && (
+                sheets[sheetNum] && (
                   <Table
                     rows={sheets[sheetNum].rows}
                     cols={sheets[sheetNum].cols}
                     cells={cells}
                     sheetNum={sheetNum}
                     changeCell={this.changeCell}
-                    sheetName={sheetName}
                   />
                 )
               );

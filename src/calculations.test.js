@@ -149,21 +149,6 @@ describe('calculateCell', () => {
   });
 });
 
-describe('dependsOn', () => {
-  it('should return true if dependent', () => {
-    expect(dependsOn('A1', 'A2', cells)).toBeTruthy();
-  });
-  it('should return false if not dependent', () => {
-    expect(dependsOn('A4', 'A2', cells)).toBeFalsy();
-  });
-  it('should return true if indirectly dependent', () => {
-    expect(dependsOn('A1', 'A4', cells)).toBeTruthy();
-  });
-  // it('should true if on different sheets and dependent', () => {
-  //   expect(dependsOn(
-  // })
-});
-
 // describe('addDependencies', () => {
 //   it('should find dependencies', () => {
 //     const sheets = preprocessCells();
