@@ -17,11 +17,12 @@ export const excelFuncToJS = funcStr =>
 
 export const getVarNames = funcStr =>
   unique(
-    (funcStr
-      .split('"')
-      .filter(isIndexEven)
-      .join('"')
-      .match(/(^|[^.])[A-Z]\w*/g) || []
+    (
+      funcStr
+        .split('"')
+        .filter(isIndexEven)
+        .join('"')
+        .match(/(^|[^.])[A-Z]\w*/g) || []
     ).map(el => (/[A-Z]/.test(el[0]) ? el : el.slice(1)))
   );
 
@@ -52,6 +53,8 @@ export const dependsOn = (aId, bId, cells) => {
   if (a.vars.includes(bId)) return true;
   return a.vars.some(el => dependsOn(el, bId, cells));
 };
+
+export const addDependencies = sheets => sheets;
 
 export const calculate = sheets =>
   objectMapper(

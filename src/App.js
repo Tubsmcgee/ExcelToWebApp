@@ -3,7 +3,7 @@ import xlsx from 'xlsx';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import {unique, getRow, getCol, setIn} from './utils.js';
-import {preprocessCells, calculate} from './calculations.js';
+import {preprocessCells, calculate, addDependencies} from './calculations.js';
 import {BrowserRouter as Router, Route, NavLink} from 'react-router-dom';
 import {Table} from './Table.js';
 
@@ -22,19 +22,15 @@ class App extends Component {
   loadSheet(data) {
     const parsedSheets = xlsx.read(data).Sheets;
     const sheetNames = Object.keys(parsedSheets);
-    const sheets = calculate(
-      //TODO: getFunctionCellIds here
-      sheetNames.reduce((res, sheetName) => {
-        const sheet = parsedSheets[sheetName];
-        const {cells, functionCellIds} = preprocessCells(sheet);
-        const rows = unique(Object.keys(cells).map(getRow)).sort(
-          (a, b) => a - b
-        );
-        const cols = unique(Object.keys(cells).map(getCol)).sort();
-        res[sheetName] = {cells, functionCellIds, rows, cols};
-        return res;
-      }, {})
-    );
+    const preprocessSheets = sheetNames.reduce((res, sheetName) => {
+      const sheet = parsedSheets[sheetName];
+      const {cells, functionCellIds} = preprocessCells(sheet);
+      const rows = unique(Object.keys(cells).map(getRow)).sort((a, b) => a - b);
+      const cols = unique(Object.keys(cells).map(getCol)).sort();
+      res[sheetName] = {cells, functionCellIds, rows, cols};
+      return res;
+    }, {});
+    const sheets = addDependencies(preprocessSheets);
     this.setState({sheets});
   }
   changeFile(file) {

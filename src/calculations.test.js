@@ -3,7 +3,8 @@ import {
   dependsOn,
   calculateCell,
   excelFuncToJS,
-  getVarNames
+  getVarNames,
+  addDependencies
 } from './calculations.js';
 
 const cells = {
@@ -17,6 +18,12 @@ const cells = {
   A4: {id: 'A4', v: 5},
   C1: {id: 'C1', vars: ['B17'], func: B17 => B17}
 };
+
+describe('addDependencies', () => {
+  it('should find dependencies', () => {
+    expect(addDependencies({stuff: {}})).toEqual({});
+  });
+});
 
 describe('excelFuncToJS', () => {
   it('should ignore strings', () => {
