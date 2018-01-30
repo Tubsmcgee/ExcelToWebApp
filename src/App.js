@@ -36,14 +36,8 @@ class App extends Component {
 
   changeCell = (id, val) => {
     const newState = assocPath(['cells', id, 'v'], val, this.state);
-    // TODO CALCULATE
-    // const calculatedState = assocPath(
-    //   ['sheets'],
-    //   calculate(newState.sheets),
-    //   newState
-    // );
-
-    this.setState(newState);
+    const calculatedCells = calculate(newState.cells, id);
+    this.setState({cells: calculatedCells});
   };
 
   render() {
@@ -72,16 +66,16 @@ class App extends Component {
             path="/:sheetName"
             render={({match: {params: {sheetName}}}) => {
               const sheetNum = sheets.findIndex(s => s.sheetName === sheetName);
-              return (
-                sheets[sheetNum] && (
-                  <Table
-                    rows={sheets[sheetNum].rows}
-                    cols={sheets[sheetNum].cols}
-                    cells={cells}
-                    sheetNum={sheetNum}
-                    changeCell={this.changeCell}
-                  />
-                )
+              return sheets[sheetNum] ? (
+                <Table
+                  rows={sheets[sheetNum].rows}
+                  cols={sheets[sheetNum].cols}
+                  cells={cells}
+                  sheetNum={sheetNum}
+                  changeCell={this.changeCell}
+                />
+              ) : (
+                ''
               );
             }}
           />

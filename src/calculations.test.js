@@ -1,9 +1,9 @@
 import {
   processSheets,
-  dependsOn,
   calculateCell,
   excelFuncToJS,
-  getVarNames
+  getVarNames,
+  calculate
 } from './calculations.js';
 
 const parsedSheets = {
@@ -175,12 +175,35 @@ describe('calculateCell', () => {
 describe('processSheets', () => {
   const processed = processSheets(parsedSheets);
   it('should find dependencies', () => {
-    console.log(processed.cells);
     expect(processed.cells.A2_0.deps.sort()).toEqual([
       'A1_2',
       'B3_0',
       'B4_0',
       'E4_0'
     ]);
+  });
+});
+
+describe('calculate', () => {
+  const cells = {
+    A1: {
+      v: 2,
+      deps: ['B1', 'C1']
+    },
+    B1: {
+      func: A1 => A1 + 5,
+      vars: ['A1'],
+      deps: ['C1'],
+      v: 6
+    },
+    C1: {
+      func: (A1, B1) => A1 + B1,
+      vars: ['A1', 'B1'],
+      deps: [],
+      v: 7
+    }
+  };
+  it('should calculate', () => {
+    expect(calculate(cells, 'A1').C1.v).toEqual(9);
   });
 });

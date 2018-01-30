@@ -1,6 +1,6 @@
 import functions from './functions.js';
 import {getRow, getCol, isIndexEven, toFullId, rangeReplacer} from './utils.js';
-import {uniq, map, fromPairs, merge} from 'ramda';
+import {uniq, fromPairs, merge, assoc, reduce} from 'ramda';
 
 export const excelFuncToJS = (funcStr, sheetNames, sheetNum) =>
   funcStr
@@ -31,41 +31,33 @@ export const getVarNames = funcStr =>
     ).map(el => (/[A-Z]/.test(el[0]) ? el : el.slice(1)))
   );
 
-export const calculateCell = (cellId, cells, sheets) => {
+export const calculateCell = (cellId, cells) => {
   const cell = cells[cellId];
   const args = cell.vars.map(varName => {
-    if (varName === 'Sheets') return sheets;
     if (functions[varName]) return functions[varName];
     if (cells[varName] && cells[varName].v !== undefined) {
-      if (isNaN(cells[varName].v)) return cells[varName].v;
-      return +cells[varName].v;
+      if (isNaN(cells[varName].v) || cells[varName].v === '')
+        return cells[varName].v;
+      return Number(cells[varName].v);
     }
     console.error(varName, 'in', cells, 'not found or has no value');
     return 0;
   });
   try {
     const result = cell.func(...args);
-    if (result !== cell.v) return {...cell, v: result};
-    return cell;
+    return result !== cell.v ? {...cell, v: result} : cell;
   } catch (e) {
     console.error('error computing function', cell, e);
   }
 };
 
-export const calculate = sheets =>
-  map(
-    sheet => ({
-      ...sheet,
-      cells: sheet.functionCellIds.reduce(
-        (res, cellId) => ({
-          ...res,
-          [cellId]: calculateCell(cellId, res, sheets)
-        }),
-        sheet.cells
-      )
-    }),
-    sheets
-  );
+export const calculate = (cells, id) => {
+  const calculatedCells = cells[id].func
+    ? assoc(id, calculateCell(id, cells), cells)
+    : cells;
+  return reduce(calculate, calculatedCells, calculatedCells[id].deps);
+  //TODO: DependsOn for deps
+};
 
 export const preprocessCells = (parsed, sheetNames, sheetNum) =>
   fromPairs(
